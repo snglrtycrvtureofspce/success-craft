@@ -1,0 +1,282 @@
+@isTest
+private class TestContact {
+    
+    static testmethod void testAddCaseTriggerHigh() {
+        // Get user
+        List<User> User = [SELECT Id FROM User LIMIT 1];        
+
+        // New account
+        Account NewAccount = new Account();        
+        NewAccount.Name = 'Account Ivanov';
+        if (user.size() > 0) {
+            NewAccount.OwnerId = User[0].Id;
+        }
+        insert NewAccount;        
+        System.assertEquals(1, [SELECT Id FROM Account].size());
+        
+        // New contact
+        Contact NewContact = new Contact();
+        NewContact.FirstName = 'Ivan';
+        NewContact.LastName = 'Ivanov';
+        NewContact.AccountId = NewAccount.Id;
+        NewContact.Email = 'test@gmail.com';
+        NewContact.Contact_Level__c = 'Primary';
+        insert NewContact;
+        System.assertEquals(1, [SELECT Id FROM Contact].size());
+        
+        // Get case
+        List<Case> CaseRecord = [SELECT Id, AccountId, Status, Origin, OwnerId, Priority FROM Case WHERE ContactId = :NewContact.Id LIMIT 1];
+        System.assert(CaseRecord.size() > 0);
+        if (CaseRecord.size() > 0) {
+            System.assertEquals(CaseRecord[0].AccountId, NewContact.AccountId);
+            System.assert(CaseRecord[0].Status == 'Working');
+        	System.assert(CaseRecord[0].Origin == 'New Contact');            
+            System.assertEquals(CaseRecord[0].OwnerId, newAccount.OwnerId);
+            System.assert(CaseRecord[0].Priority == 'High');
+        }
+    }
+    
+    static testmethod void testAddCaseTriggerMedium() {
+        // Get user
+        List<User> User = [SELECT Id FROM User LIMIT 1];        
+
+        // New account
+        Account NewAccount = new Account();        
+        NewAccount.Name = 'Account Ivanov';
+        if (user.size() > 0) {
+            NewAccount.OwnerId = User[0].Id;
+        }
+        insert NewAccount;
+        System.assertEquals(1, [SELECT Id FROM Account].size());
+        
+		// New contact
+        Contact NewContact = new Contact();
+        NewContact.FirstName = 'Ivan';
+        NewContact.LastName = 'Ivanov';
+        NewContact.AccountId = NewAccount.Id;
+        NewContact.Email = 'test@gmail.com';
+        NewContact.Contact_Level__c = 'Secondary';
+        insert NewContact;
+        System.assertEquals(1, [SELECT Id FROM Contact].size());
+        
+        // Get case
+        List<Case> CaseRecord = [SELECT Id, AccountId, Status, Origin, OwnerId, Priority FROM Case WHERE ContactId = :NewContact.Id LIMIT 1];
+        System.assert(CaseRecord.size() > 0);
+        if (CaseRecord.size() > 0) {
+            System.assertEquals(CaseRecord[0].AccountId, NewContact.AccountId);
+            System.assert(CaseRecord[0].Status == 'Working');
+        	System.assert(CaseRecord[0].Origin == 'New Contact');            
+            System.assertEquals(CaseRecord[0].OwnerId, newAccount.OwnerId);
+            System.assert(CaseRecord[0].Priority == 'Medium');
+        }
+    }
+    
+    static testmethod void testAddCaseTriggerLow() {
+        // Get user
+        List<User> User = [SELECT Id FROM User LIMIT 1];        
+
+        Account newAccount = new Account();        
+        newAccount.Name = 'Account Ivanov';
+        if (user.size() > 0) {
+            newAccount.OwnerId = User[0].Id;
+        }
+        insert newAccount;
+        System.assertEquals(1, [SELECT Id FROM Account].size());
+        
+        // New contact
+        Contact NewContact = new Contact();
+        NewContact.FirstName = 'Ivan';
+        NewContact.LastName = 'Ivanov';
+        NewContact.AccountId = newAccount.Id;
+        NewContact.Email = 'test@gmail.com';
+        NewContact.Contact_Level__c = 'Tertiary';
+        insert NewContact;
+        System.assertEquals(1, [SELECT Id FROM Contact].size());
+        
+        // Get case
+        List<Case> CaseRecord = [SELECT Id, AccountId, Status, Origin, OwnerId, Priority FROM Case WHERE ContactId = :NewContact.Id LIMIT 1];
+        System.assert(CaseRecord.size() > 0);
+        if (CaseRecord.size() > 0) {
+            System.assertEquals(CaseRecord[0].AccountId, NewContact.AccountId);
+            System.assert(CaseRecord[0].Status == 'Working');
+        	System.assert(CaseRecord[0].Origin == 'New Contact');
+            
+            System.assertEquals(CaseRecord[0].OwnerId, newAccount.OwnerId);
+            System.assert(CaseRecord[0].Priority == 'Low');
+        }
+    }
+
+    static testmethod void testDelCaseTrigger() {
+        // Get user
+        List<User> User = [SELECT Id FROM User LIMIT 1];
+
+        // New account
+        Account newAccount = new Account();        
+        newAccount.Name = 'Account Ivanov';
+        if (user.size() > 0) {
+            newAccount.OwnerId = User[0].Id;
+        }
+        insert newAccount;
+        System.assertEquals(1, [SELECT Id FROM Account].size());
+        
+        // New contact
+        Contact NewContact = new Contact();
+        NewContact.FirstName = 'Ivan';
+        NewContact.LastName = 'Ivanov';
+        NewContact.AccountId = newAccount.Id;
+        NewContact.Email = 'test@gmail.com';
+        NewContact.Contact_Level__c = 'Secondary';
+        insert NewContact;
+        System.assertEquals(1, [SELECT Id FROM Contact].size());
+        
+        // Test delete contact
+        delete NewContact; 
+        List<Contact> ContactRecord = [SELECT Id FROM Contact WHERE Id = :NewContact.Id LIMIT 1];
+        System.assert(ContactRecord.size() == 0);
+        
+        // Test delete case
+        List<Case> CaseRecords = [SELECT Id FROM Case WHERE ContactId = :NewContact.Id];
+        System.assert(CaseRecords.size() == 0);
+    }
+    
+    static testmethod void testContactControllerExtensionSave() {
+        // New contact
+        Contact NewContact = new Contact();
+        NewContact.FirstName = 'Ivan';
+        NewContact.LastName = 'Ivanov';
+        NewContact.Email = 'test@gmail.com';
+        NewContact.Contact_Level__c = 'Secondary';
+
+        // Test extension controller
+        ApexPages.StandardController StandardControllerContact = new ApexPages.StandardController(NewContact);
+	    ContactControllerExtension ControllerExtension  = new ContactControllerExtension(StandardControllerContact);
+        // Test Save method
+        ControllerExtension.Save();
+                
+        // Get contact
+        List<Contact> ContactRecord = [SELECT Id FROM Contact WHERE Id = :StandardControllerContact.getId() LIMIT 1];
+        System.assert(ContactRecord.size() > 0);
+        
+        // Test PageReference method
+        System.assertEquals('/apex/contactsmanagerpage', ControllerExtension.Cancel().getUrl());
+
+   }
+    
+    static testmethod void testContactControllerExtensionCancel() {
+        // New contact
+        Contact NewContact = new Contact();
+        NewContact.FirstName = 'Ivan';
+        NewContact.LastName = 'Ivanov';
+        NewContact.Email = 'test@gmail.com';
+        NewContact.Contact_Level__c = 'Secondary';
+
+        // Test extension controller
+        ApexPages.StandardController StandardControllerContact = new ApexPages.StandardController(NewContact);
+	    ContactControllerExtension ControllerExtension  = new ContactControllerExtension(StandardControllerContact);
+		// Test Cancel method
+        ControllerExtension.Cancel();
+        
+        // Get contact
+        List<Contact> ContactRecord = [SELECT Id FROM Contact WHERE Id = :StandardControllerContact.getId() LIMIT 1];
+        System.assert(ContactRecord.size() == 0);
+        
+        // Test PageReference method
+        System.assertEquals('/apex/contactsmanagerpage', ControllerExtension.Cancel().getUrl()); 
+        system.debug(ControllerExtension.Cancel().getUrl());
+    }
+    
+    static testmethod void testContactsManagerController() {
+  
+        // Test custom controller
+        ContactsManagerController ContactsManager = new ContactsManagerController();
+        
+        // New contact(popup)        
+        // Show popup window        
+        ContactsManager.showPopup();
+        System.assertEquals(true, ContactsManager.displayPopup);
+        ContactsManager.NewContact.FirstName = 'Ivan';
+        ContactsManager.NewContact.LastName = 'Ivanov';
+        ContactsManager.NewContact.Email = 'test@gmail.com';
+        ContactsManager.NewContact.Contact_Level__c = 'Secondary';
+        ContactsManager.saveNewContact();
+        // Close popup window
+        System.assertEquals(false, ContactsManager.displayPopup);
+        
+        // Test getContacts method
+        List<Contact> Contacts = ContactsManager.getContacts();
+        System.assertEquals(1, Contacts.size());
+        System.assertEquals(1, ContactsManager.totalSize);
+        ContactsManager.sortOrder = 'Name';
+        ContactsManager.sortByField();
+        ContactsManager.sortOrder = 'Email';
+        ContactsManager.sortByField();
+        
+        // Set text for searh
+        ContactsManager.searchText = 'Ivan';
+        ContactsManager.searchContact();
+        Contacts = ContactsManager.getContacts();
+        System.assertEquals(1, Contacts.size());
+        ContactsManager.searchText = 'Petr';
+        ContactsManager.searchContact();
+        Contacts = ContactsManager.getContacts();
+        System.assertEquals(0, Contacts.size());        
+        
+        // Delete selected contact
+        // Get all contacts
+        ContactsManager.searchText = '';        
+        ContactsManager.searchContact();
+        Contacts = ContactsManager.getContacts();
+        System.assertEquals(1, Contacts.size());
+        ContactsManager.deleteSelectedContact();
+        ContactsManager.selectedContactId = Contacts[0].Id;
+        ContactsManager.deleteSelectedContact();        
+        List<Contact> ContactRecord = [SELECT Id FROM Contact WHERE Id = :Contacts[0].Id LIMIT 1];
+        System.assert(ContactRecord.size() == 0);
+        
+        // New contact        
+        System.assertEquals('/apex/NewContactPage', ContactsManager.NewContact().getUrl());        
+        
+        // Test pagination
+        List<Contact> ContactList = new List<Contact>();
+        for (Integer i = 0; i < 15; i++) {
+           ContactList.add(new Contact(FirstName = 'Ivan' + i, LastName = 'Ivanov' + i, Email = 'test' + i + '@gmail.com', Contact_Level__c = 'Secondary'));
+		}
+        insert ContactList;
+        
+        // Test getTotalPages method
+        ContactsManager.getContacts();
+        System.assertEquals(2, ContactsManager.getTotalPages());
+        
+        // Test getPageNumber method
+        System.assertEquals(1, ContactsManager.getPageNumber());
+        
+        // Test Next method
+        ContactsManager.Next();
+        System.assertEquals(2, ContactsManager.getPageNumber());
+
+        // Test Previous method
+        ContactsManager.Previous();
+        System.assertEquals(1, ContactsManager.getPageNumber());
+        
+        // Test End method
+        ContactsManager.End();
+        System.assertEquals(2, ContactsManager.getPageNumber());
+        
+        // Test getDisableNextEnd method
+        System.assertEquals(true, ContactsManager.getDisableNextEnd());
+        
+        // Test Beginning method
+        ContactsManager.Beginning();
+        System.assertEquals(1, ContactsManager.getPageNumber());
+                
+        // Test getDisableBeginningPrevious method
+        System.assertEquals(true, ContactsManager.getDisableBeginningPrevious()); 
+        
+		// Test getTotalPages method "else"
+        ContactList = [SELECT Id FROM Contact LIMIT 5];
+        delete ContactList;
+        ContactsManager.getContacts();
+        System.assertEquals(1, ContactsManager.getTotalPages());        
+    }
+    
+}

@@ -1,0 +1,45 @@
+trigger addCaseTrigger on Contact (after insert) {
+  	if (Trigger.isAfter && Trigger.isInsert) {
+        List<Case> CaseList = new List<Case>();
+        for (Contact contactItem: Trigger.New) {
+            // New case
+            Case CaseRecord = new Case();             
+            CaseRecord.ContactId = contactItem.Id;
+            CaseRecord.AccountId = contactItem.AccountId;
+            CaseRecord.Status = 'Working';
+            CaseRecord.Origin = 'New Contact';
+            
+            // Set Owner field
+            List<Account> AccountRecord = [SELECT OwnerId FROM Account WHERE Id = :contactItem.AccountId LIMIT 1];
+            if (AccountRecord.size() > 0) {
+                CaseRecord.OwnerId = AccountRecord[0].OwnerId;
+            }
+
+            switch on contactItem.Contact_Level__c {
+    			when 'Primary' {		
+        			CaseRecord.Priority = 'High';
+    			}	
+    			when 'Secondary' {	
+       				CaseRecord.Priority = 'Medium';
+    			}
+    			when 'Tertiary' {
+       				CaseRecord.Priority = 'Low';
+    			}
+                // When else, then by default, as in the Сase
+			}            
+            CaseList.add(CaseRecord);            
+        }
+        
+		// If list is empty then nothing insert.
+    	if (CaseList.size() > 0) {
+    		try{
+    	  	  insert CaseList;
+    		} catch (DmlException e){
+    			for (Integer i = 0; i < e.getNumDml(); i++) {
+        			// Process exception here
+        			System.debug('$$$ ' + e.getDmlMessage(i));
+   				}
+    		}
+   		}
+    }
+}

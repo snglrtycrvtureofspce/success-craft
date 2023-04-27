@@ -1,0 +1,23 @@
+public class ContactControllerExtension { 
+  
+    private final Contact contact;
+    private ApexPages.StandardController stdController;
+
+    // Constructor
+    public ContactControllerExtension(ApexPages.StandardController stdController) {
+        this.contact = (Contact)stdController.getRecord();
+        this.stdController = stdController;
+    }
+
+    // Click save button
+    public PageReference Save() {
+        stdController.save();
+        return Page.ContactsManagerPage;
+    }
+    
+    // Click cancel button
+    public PageReference Cancel() {
+		stdController.cancel();		
+		return Page.ContactsManagerPage;
+    }
+}

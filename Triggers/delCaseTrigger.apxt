@@ -1,0 +1,22 @@
+trigger delCaseTrigger on Contact (before delete) {
+    if (Trigger.isDelete) {
+		List<Case> CaseList = new List<Case>();
+        for (Contact contactItem: Trigger.Old) {            
+            // Set list records for delete
+            List<Case> CaseRecords = [SELECT Id FROM Case WHERE ContactId = :contactItem.Id];
+            CaseList.addAll(CaseRecords);
+        }
+        
+		// If list is empty then nothing delete.
+    	if (CaseList.size() > 0) {
+    		try{
+    	  	  delete CaseList;
+    		} catch (DmlException e) {
+    			for (Integer i = 0; i < e.getNumDml(); i++) {
+        			// Process exception here
+        			System.debug('$$$ ' + e.getDmlMessage(i)); 
+   				}
+    		}
+   		}
+	}
+}

@@ -1,0 +1,144 @@
+<apex:page controller="ContactsManagerController" title="Contacts Manager" sidebar="false">
+	<style type="text/css"> 
+   		.popup {background-color: white; border-width: 2px; border-style: solid; z-index: 9999; left: 50%; padding:11px; position: absolute; width: 600px; margin-left: -240px; top:100px;} 
+    	.popupBackground {background-color:black; opacity: 0.20; filter: alpha(opacity = 20); position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 9998;} 
+  	</style>
+   
+	<apex:form >
+        
+        <apex:outputPanel id="tstpopup"> 
+      		<apex:outputPanel styleClass="popupBackground" layout="block" rendered="{!displayPopUp}" /> 
+      		<apex:outputPanel styleClass="popup" layout="block" rendered="{!displayPopUp}"> 
+                <apex:pageBlock title="New Contact">
+                    <h1>New Contact</h1>
+                    <hr/>
+            		<apex:pageBlockSection columns="1">
+                        <apex:inputField value="{!newContact.FirstName}"/>
+                        <apex:inputField value="{!newContact.LastName}" required="true" />
+                        <apex:inputField value="{!newContact.Email}" required="true" />
+                        <apex:inputField value="{!newContact.Contact_Level__c}" />
+                        <apex:inputField value="{!newContact.AccountId}" />
+            		</apex:pageBlockSection>
+            		<apex:pageBlockButtons >
+                		<apex:commandButton action="{!saveNewContact}" value="Save" />
+                		<apex:commandButton action="{!closePopup}" value="Cancel" rerender="tstpopup" immediate="true" />
+            		</apex:pageBlockButtons>
+        		</apex:pageBlock>
+      		</apex:outputPanel> 
+    	</apex:outputPanel> 
+        
+    	<apex:pageBlock >            
+            <apex:pageBlockSection columns="2">
+                <apex:pageBlockSectionItem >
+                    <apex:panelGroup >
+                        <apex:outputLabel value="First or Last Name:" />
+                        <apex:inputText id="searchTextBox" value="{!searchText}" title="Search Text" />
+                        <apex:commandButton Id="btnSearchContact" action="{!searchContact}" reRender="data" status="status" title="Search" value="Search!" />
+                    </apex:panelGroup>                
+                </apex:pageBlockSectionItem>
+                
+                <apex:pageBlockSectionItem >
+                	<apex:actionStatus id="status" startText="Searching... please wait..."/>                
+                </apex:pageBlockSectionItem>
+            </apex:pageBlockSection>
+        </apex:pageBlock>        
+        
+        <apex:pageBlock id="data" title="Result: {!totalSize}">
+            <apex:pageMessages />            
+            <apex:pageBlockButtons location="top">
+                <apex:commandButton value="New Contact" action="{!NewContact}" />				
+                <apex:commandButton value="New Contact(popup)" action="{!showPopup}" rerender="tstpopup" />                
+    		</apex:pageBlockButtons>
+            
+       		<apex:pageBlockButtons location="bottom" >
+                <apex:outputPanel id="navigation">
+                    <apex:commandButton action="{!Beginning}" title="Beginning" value="<<" disabled="{!disableBeginningPrevious}" reRender="tableContacts,navigation"/>
+                    <apex:commandButton action="{!Previous}" title="Previous" value="<" disabled="{!disableBeginningPrevious}" reRender="tableContacts,navigation"/>        
+                    <apex:commandButton action="{!Next}" title="Next" value=">" disabled="{!disableNextEnd}" reRender="tableContacts,navigation"/>
+                    <apex:commandButton action="{!End}" title="End" value=">>" disabled="{!disableNextEnd}" reRender="tableContacts,navigation"/>        
+                </apex:outputPanel>
+            </apex:pageBlockButtons>
+            
+            <apex:pageBlockTable value="{!Contacts}" var="contact" id="tableContacts">
+                <apex:column width="15%">
+                    <apex:facet name="header">
+           				<apex:commandLink action="{!sortByField}" reRender="tableContacts" value="Name">
+                            <apex:param value="Name" assignTo="{!sortOrder}"/>
+                        </apex:commandLink>
+         			</apex:facet>
+                	<apex:outputLink value="/{!contact.Id}">{!contact.Name}</apex:outputLink>
+            	</apex:column>
+                <apex:column width="15%">
+                    <apex:facet name="header">
+           				<apex:commandLink action="{!sortByField}" reRender="tableContacts" value="Email">
+                        	<apex:param value="Email" assignTo="{!sortOrder}"/>
+                        </apex:commandLink>                        
+         			</apex:facet>
+                    <apex:outputField value="{!contact.Email}" />
+                </apex:column>
+                <apex:column width="10%">
+                    <apex:facet name="header">
+           				<apex:commandLink action="{!sortByField}" reRender="tableContacts" value="Contact Level">
+                        	<apex:param value="Contact_Level__c" assignTo="{!sortOrder}" />
+                        </apex:commandLink>
+         			</apex:facet>
+                    <!-- Не совсем понял из тестового задания как нужно отобразить "picklist" "Contact Level (picklist)",
+					закомментирован запасной вариант
+                    <apex:inputField value="{!contact.Contact_Level__c}" />
+					-->
+                    <apex:outputField value="{!contact.Contact_Level__c}" />                    
+                </apex:column>
+                <apex:column width="15%">
+                    <apex:facet name="header">
+           				<apex:commandLink action="{!sortByField}" reRender="tableContacts" value="Account">
+                            <apex:param value="Account.Name" assignTo="{!sortOrder}" />
+                        </apex:commandLink>
+         			</apex:facet>
+                    <!-- Не совсем понял из тестового задания как нужно отобразить "lookup" "Account (lookup)",
+					закомментирован запасной вариант
+                    <apex:inputField value="{!contact.AccountId}" />                     
+					-->
+                    <apex:outputField value="{!contact.AccountId}" />
+                </apex:column>
+                <apex:column width="15%">
+                    <apex:facet name="header">
+           				<apex:commandLink action="{!sortByField}" reRender="tableContacts" value="Owner">
+                        	<apex:param value="Owner.Name" assignTo="{!sortOrder}" />
+                        </apex:commandLink>
+         			</apex:facet>
+                    <!-- Не совсем понял из тестового задания как нужно отобразить "lookup" "Owner (lookup)",
+					закомментирован запасной вариант
+                    <apex:inputField value="{!contact.OwnerId}" />                     
+					-->
+                    <apex:outputField value="{!contact.OwnerId}" />
+                </apex:column>
+                <apex:column width="15%">
+                    <apex:facet name="header">
+           				<apex:commandLink action="{!sortByField}" reRender="tableContacts" value="Created By">
+                        	<apex:param value="CreatedBy.Name" assignTo="{!sortOrder}" />
+                        </apex:commandLink>
+         			</apex:facet>
+                    <!-- Не совсем понял из тестового задания как нужно отобразить "lookup" "Owner (lookup)",
+					закомментирован запасной вариант
+                    <apex:inputField value="{!contact.CreatedById}" />                     
+					-->
+                    <apex:outputField value="{!contact.CreatedById}" />                 
+                </apex:column>
+                <apex:column width="15%">
+                	<apex:facet name="header">
+           				<apex:commandLink action="{!sortByField}" reRender="tableContacts" value="Created Date">
+                    		<apex:param value="CreatedDate" assignTo="{!sortOrder}" />
+                    	</apex:commandLink>
+         			</apex:facet>
+                	<apex:outputField value="{!contact.CreatedDate}" />    
+                </apex:column>
+                <apex:column width="1%">
+                    <apex:commandButton Id="btnDel" action="{!deleteSelectedContact}" reRender="tableContacts" title="Delete" value="Delete">
+                    	<apex:param name="ContactId" value="{!contact.Id}" assignTo="{!selectedContactId}" />
+                    </apex:commandButton>                    
+      			</apex:column>
+                <apex:facet name="footer">Showing Page # {!pageNumber} of {!totalPages}</apex:facet>
+    		</apex:pageBlockTable>
+  		</apex:pageBlock>
+    </apex:form>
+</apex:page>
